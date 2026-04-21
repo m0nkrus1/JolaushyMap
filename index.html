@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JolaushyMap – Толық Жүйе</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;600;800&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080d14;--bg2:#0d1520;--card:#111c2a;--border:rgba(0,200,255,0.12);
+  --cyan:#00c8ff;--green:#00e57a;--yellow:#ffd600;--red:#ff4060;
+  --text:#dce8f5;--muted:#6a8099;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;background:rgba(8,13,20,0.95);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+.logo{font-family:'Unbounded',sans-serif;font-size:1.2rem;font-weight:800;color:var(--cyan);cursor:pointer}
+.nav-tabs{display:flex;gap:0.3rem}
+.tab{padding:0.5rem 1rem;border-radius:6px;font-size:0.82rem;cursor:pointer;border:1px solid transparent;transition:all 0.2s;color:var(--muted);background:none}
+.tab:hover{color:var(--text);border-color:var(--border)}
+.tab.active{color:var(--cyan);border-color:var(--cyan);background:rgba(0,200,255,0.08)}
+.user-area{display:flex;align-items:center;gap:0.8rem}
+.auth-btn{padding:0.4rem 1rem;border-radius:6px;font-size:0.8rem;cursor:pointer;transition:all 0.2s;border:none}
+.btn-login{background:transparent;color:var(--cyan);border:1px solid var(--cyan)}
+.btn-login:hover{background:rgba(0,200,255,0.1)}
+.btn-register{background:var(--cyan);color:#080d14;font-weight:600}
+.btn-register:hover{background:#33d4ff}
+.user-chip{display:flex;align-items:center;gap:0.5rem;padding:0.3rem 0.8rem;background:rgba(0,200,255,0.1);border:1px solid var(--border);border-radius:20px;font-size:0.8rem}
+.user-avatar{width:24px;height:24px;border-radius:50%;background:var(--cyan);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;color:#080d14}
+.logout-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.75rem;padding:0.2rem 0.4rem;border-radius:4px}
+.logout-btn:hover{color:var(--red)}
+
+/* PAGES */
+.page{display:none;padding:2rem;min-height:calc(100vh - 60px)}
+.page.active{display:block}
+
+/* DASHBOARD */
+.dash-header{margin-bottom:2rem}
+.dash-header h1{font-family:'Unbounded',sans-serif;font-size:2rem;font-weight:800;letter-spacing:-0.02em}
+.dash-header p{color:var(--muted);margin-top:0.4rem}
+.live-badge{display:inline-flex;align-items:center;gap:0.4rem;background:rgba(0,229,122,0.1);border:1px solid rgba(0,229,122,0.3);border-radius:20px;padding:0.25rem 0.8rem;font-size:0.75rem;color:var(--green);margin-bottom:1rem}
+.dot-pulse{width:7px;height:7px;border-radius:50%;background:var(--green);animation:blink 1.2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.2}}
+
+.route-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;margin-bottom:2rem}
+.route-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.2rem;cursor:pointer;transition:all 0.2s}
+.route-card:hover{border-color:rgba(0,200,255,0.3);transform:translateY(-2px)}
+.route-card.selected{border-color:var(--cyan);background:rgba(0,200,255,0.05)}
+.rc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem}
+.rc-num{font-family:'Unbounded',sans-serif;font-size:1.3rem;font-weight:800}
+.status-dot{width:12px;height:12px;border-radius:50%}
+.s-green{background:var(--green);box-shadow:0 0 8px var(--green)}
+.s-yellow{background:var(--yellow);box-shadow:0 0 8px var(--yellow)}
+.s-red{background:var(--red);box-shadow:0 0 8px var(--red)}
+.rc-name{font-size:0.78rem;color:var(--muted);margin-bottom:0.6rem}
+.bar-bg{background:rgba(255,255,255,0.07);border-radius:4px;height:5px;overflow:hidden;margin-bottom:0.4rem}
+.bar-fill{height:100%;border-radius:4px;transition:width 1s ease}
+.b-green{background:var(--green)}.b-yellow{background:var(--yellow)}.b-red{background:var(--red)}
+.rc-pax{font-size:0.72rem;color:var(--muted);text-align:right}
+
+/* DETAIL PANEL */
+.detail-panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:2rem;display:none}
+.detail-panel.show{display:block}
+.dp-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem}
+.dp-title{font-family:'Unbounded',sans-serif;font-size:1.1rem;font-weight:700}
+.close-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.2rem}
+.dp-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
+.dp-stat{text-align:center}
+.dp-stat-val{font-family:'Unbounded',sans-serif;font-size:1.5rem;font-weight:800}
+.dp-stat-label{font-size:0.75rem;color:var(--muted);margin-top:0.2rem}
+.prediction-bar{margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)}
+.pred-title{font-size:0.8rem;color:var(--muted);margin-bottom:0.8rem;text-transform:uppercase;letter-spacing:0.06em}
+.pred-hours{display:flex;gap:0.5rem;align-items:flex-end;height:60px}
+.pred-hour{flex:1;display:flex;flex-direction:column;align-items:center;gap:0.3rem}
+.pred-bar-wrap{flex:1;width:100%;display:flex;align-items:flex-end;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden}
+.pred-bar-inner{width:100%;border-radius:3px;transition:height 0.5s ease}
+.pred-hour-label{font-size:0.6rem;color:var(--muted)}
+
+/* SEARCH PAGE */
+.search-box{position:relative;margin-bottom:2rem}
+.search-input{width:100%;padding:1rem 1.2rem 1rem 3rem;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.95rem;outline:none;transition:border-color 0.2s;font-family:'Noto Sans KR',sans-serif}
+.search-input:focus{border-color:var(--cyan)}
+.search-icon{position:absolute;left:1rem;top:50%;transform:translateY(-50%);color:var(--muted);font-size:1.1rem;pointer-events:none}
+.filter-row{display:flex;gap:0.5rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.filter-btn{padding:0.4rem 1rem;border-radius:20px;font-size:0.8rem;cursor:pointer;border:1px solid var(--border);background:none;color:var(--muted);transition:all 0.2s}
+.filter-btn:hover,.filter-btn.on{border-color:var(--cyan);color:var(--cyan);background:rgba(0,200,255,0.08)}
+.search-results{display:flex;flex-direction:column;gap:0.8rem}
+.sr-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1.2rem;display:flex;align-items:center;gap:1rem;transition:all 0.2s}
+.sr-card:hover{border-color:rgba(0,200,255,0.3);transform:translateX(4px)}
+.sr-num{font-family:'Unbounded',sans-serif;font-size:1.1rem;font-weight:800;min-width:60px}
+.sr-info{flex:1}
+.sr-name{font-size:0.9rem;font-weight:500;margin-bottom:0.3rem}
+.sr-meta{font-size:0.78rem;color:var(--muted)}
+.sr-status{display:flex;flex-direction:column;align-items:flex-end;gap:0.3rem}
+.sr-pct{font-family:'Unbounded',sans-serif;font-size:1.1rem;font-weight:700}
+.sr-label{font-size:0.72rem;color:var(--muted)}
+
+/* AUTH */
+.auth-container{max-width:420px;margin:2rem auto}
+.auth-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:2.5rem}
+.auth-title{font-family:'Unbounded',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:0.5rem}
+.auth-sub{color:var(--muted);font-size:0.85rem;margin-bottom:2rem}
+.form-group{margin-bottom:1.2rem}
+.form-label{display:block;font-size:0.8rem;color:var(--muted);margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.05em}
+.form-input{width:100%;padding:0.8rem 1rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.9rem;outline:none;transition:border-color 0.2s;font-family:'Noto Sans KR',sans-serif}
+.form-input:focus{border-color:var(--cyan)}
+.form-btn{width:100%;padding:0.9rem;background:var(--cyan);color:#080d14;border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;transition:all 0.2s;font-family:'Noto Sans KR',sans-serif}
+.form-btn:hover{background:#33d4ff;transform:translateY(-1px)}
+.form-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.auth-switch{text-align:center;margin-top:1.2rem;font-size:0.85rem;color:var(--muted)}
+.auth-switch a{color:var(--cyan);cursor:pointer;text-decoration:none}
+.auth-switch a:hover{text-decoration:underline}
+.alert{padding:0.8rem 1rem;border-radius:8px;font-size:0.85rem;margin-bottom:1rem;display:none}
+.alert.error{background:rgba(255,64,96,0.1);border:1px solid rgba(255,64,96,0.3);color:var(--red)}
+.alert.success{background:rgba(0,229,122,0.1);border:1px solid rgba(0,229,122,0.3);color:var(--green)}
+.alert.show{display:block}
+
+/* AI CHAT */
+.chat-container{max-width:700px;margin:0 auto;display:flex;flex-direction:column;height:calc(100vh - 140px)}
+.chat-header{background:var(--card);border:1px solid var(--border);border-radius:12px 12px 0 0;padding:1rem 1.5rem;display:flex;align-items:center;gap:1rem}
+.ai-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--green));display:flex;align-items:center;justify-content:center;font-size:1.2rem}
+.chat-info h3{font-family:'Unbounded',sans-serif;font-size:0.95rem;font-weight:700}
+.chat-info p{font-size:0.75rem;color:var(--muted)}
+.chat-messages{flex:1;overflow-y:auto;background:var(--bg2);border-left:1px solid var(--border);border-right:1px solid var(--border);padding:1.2rem;display:flex;flex-direction:column;gap:0.8rem}
+.chat-messages::-webkit-scrollbar{width:4px}
+.chat-messages::-webkit-scrollbar-track{background:transparent}
+.chat-messages::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.msg{max-width:80%;display:flex;flex-direction:column;gap:0.3rem}
+.msg.user{align-self:flex-end;align-items:flex-end}
+.msg.bot{align-self:flex-start;align-items:flex-start}
+.msg-bubble{padding:0.8rem 1.1rem;border-radius:12px;font-size:0.88rem;line-height:1.6}
+.msg.user .msg-bubble{background:var(--cyan);color:#080d14;border-radius:12px 12px 2px 12px}
+.msg.bot .msg-bubble{background:var(--card);border:1px solid var(--border);border-radius:12px 12px 12px 2px}
+.msg-time{font-size:0.68rem;color:var(--muted)}
+.typing-indicator{display:flex;gap:0.3rem;padding:0.8rem 1.1rem;background:var(--card);border:1px solid var(--border);border-radius:12px 12px 12px 2px;align-self:flex-start;display:none}
+.typing-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:typingDot 1.2s infinite}
+.typing-dot:nth-child(2){animation-delay:0.2s}
+.typing-dot:nth-child(3){animation-delay:0.4s}
+@keyframes typingDot{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-8px)}}
+.chat-input-area{background:var(--card);border:1px solid var(--border);border-radius:0 0 12px 12px;padding:1rem;display:flex;gap:0.8rem;align-items:flex-end}
+.chat-textarea{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:0.7rem 1rem;color:var(--text);font-size:0.88rem;resize:none;outline:none;font-family:'Noto Sans KR',sans-serif;max-height:120px;overflow-y:auto;transition:border-color 0.2s}
+.chat-textarea:focus{border-color:var(--cyan)}
+.send-btn{width:42px;height:42px;border-radius:8px;background:var(--cyan);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.1rem;transition:all 0.2s;flex-shrink:0}
+.send-btn:hover{background:#33d4ff;transform:scale(1.05)}
+.send-btn:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+.quick-btns{display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.8rem}
+.quick-btn{padding:0.35rem 0.8rem;border-radius:20px;font-size:0.75rem;background:rgba(0,200,255,0.08);border:1px solid rgba(0,200,255,0.2);color:var(--cyan);cursor:pointer;transition:all 0.2s;white-space:nowrap}
+.quick-btn:hover{background:rgba(0,200,255,0.15)}
+
+/* Login required */
+.login-required{text-align:center;padding:4rem 2rem}
+.login-required h3{font-family:'Unbounded',sans-serif;font-size:1.2rem;margin-bottom:0.8rem}
+.login-required p{color:var(--muted);margin-bottom:1.5rem}
+.login-req-btn{display:inline-block;padding:0.7rem 1.8rem;background:var(--cyan);color:#080d14;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.9rem}
+
+/* PREDICTION PAGE */
+.pred-page h2{font-family:'Unbounded',sans-serif;font-size:1.5rem;margin-bottom:0.5rem}
+.pred-page p{color:var(--muted);margin-bottom:2rem}
+.pred-select-row{display:flex;gap:1rem;margin-bottom:2rem;flex-wrap:wrap}
+.pred-select{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.7rem 1rem;color:var(--text);font-size:0.88rem;outline:none;cursor:pointer;font-family:'Noto Sans KR',sans-serif;min-width:180px}
+.pred-select:focus{border-color:var(--cyan)}
+.pred-analyze-btn{padding:0.7rem 1.8rem;background:var(--cyan);color:#080d14;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.88rem;transition:all 0.2s}
+.pred-analyze-btn:hover{background:#33d4ff}
+.pred-analyze-btn:disabled{opacity:0.5;cursor:not-allowed}
+.pred-result{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;display:none}
+.pred-result.show{display:block}
+.pred-result-title{font-family:'Unbounded',sans-serif;font-size:1rem;font-weight:700;margin-bottom:1rem}
+.pred-chart{display:flex;gap:0.8rem;align-items:flex-end;height:120px;margin-bottom:1rem}
+.pred-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:0.4rem}
+.pred-col-bar{width:100%;border-radius:4px 4px 0 0;transition:height 0.5s ease;min-height:4px}
+.pred-col-time{font-size:0.65rem;color:var(--muted)}
+.pred-col-val{font-size:0.68rem;font-weight:600}
+.pred-insight{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:1rem;margin-top:1rem;font-size:0.85rem;line-height:1.6;color:var(--muted)}
+.pred-insight strong{color:var(--text)}
+.loading-spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(0,0,0,0.3);border-top-color:#080d14;border-radius:50%;animation:spin 0.6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo" onclick="showPage('dashboard')">JolaushyMap</div>
+  <div class="nav-tabs">
+    <button class="tab active" onclick="showPage('dashboard')">🗺 Карта</button>
+    <button class="tab" onclick="showPage('search')">🔍 Іздеу</button>
+    <button class="tab" onclick="showPage('predict')">📊 Болжам</button>
+    <button class="tab" onclick="showPage('chat')">🤖 AI Көмекші</button>
+  </div>
+  <div class="user-area" id="userArea">
+    <button class="auth-btn btn-login" onclick="showPage('login')">Кіру</button>
+    <button class="auth-btn btn-register" onclick="showPage('register')">Тіркелу</button>
+  </div>
+</nav>
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+  <div class="dash-header">
+    <div class="live-badge"><div class="dot-pulse"></div> Нақты уақыт режимі</div>
+    <h1>Алматы Маршруттары</h1>
+    <p>Қоғамдық көліктің ағымдағы жүктелу деңгейі</p>
+  </div>
+  <div class="detail-panel" id="detailPanel">
+    <div class="dp-header">
+      <div class="dp-title" id="dpTitle"></div>
+      <button class="close-btn" onclick="closeDetail()">✕</button>
+    </div>
+    <div class="dp-stats">
+      <div class="dp-stat"><div class="dp-stat-val" id="dpPax" style="color:var(--cyan)"></div><div class="dp-stat-label">Жолаушы</div></div>
+      <div class="dp-stat"><div class="dp-stat-val" id="dpPct"></div><div class="dp-stat-label">Толтырылу %</div></div>
+      <div class="dp-stat"><div class="dp-stat-val" id="dpStatus"></div><div class="dp-stat-label">Күй</div></div>
+    </div>
+    <div class="prediction-bar">
+      <div class="pred-title">Болашақ 8 сағатқа болжам</div>
+      <div class="pred-hours" id="dpPredHours"></div>
+    </div>
+  </div>
+  <div class="route-grid" id="mainRouteGrid"></div>
+</div>
+
+<!-- SEARCH -->
+<div class="page" id="page-search">
+  <h2 style="font-family:'Unbounded',sans-serif;font-size:1.5rem;margin-bottom:1.5rem">Маршрут Іздеу</h2>
+  <div class="search-box">
+    <span class="search-icon">🔍</span>
+    <input class="search-input" id="searchInput" type="text" placeholder="Маршрут нөмірі немесе атауы..." oninput="doSearch()">
+  </div>
+  <div class="filter-row">
+    <button class="filter-btn on" onclick="toggleFilter(this,'all')">Барлығы</button>
+    <button class="filter-btn" onclick="toggleFilter(this,'green')">🟢 Бос</button>
+    <button class="filter-btn" onclick="toggleFilter(this,'yellow')">🟡 Орташа</button>
+    <button class="filter-btn" onclick="toggleFilter(this,'red')">🔴 Толы</button>
+  </div>
+  <div class="search-results" id="searchResults"></div>
+</div>
+
+<!-- PREDICT -->
+<div class="page pred-page" id="page-predict">
+  <h2>ML Болжам Жүйесі</h2>
+  <p>Таңдалған маршрут пен уақыт үшін AI жолаушылар санын болжайды</p>
+  <div class="pred-select-row">
+    <select class="pred-select" id="predRoute">
+      <option value="">Маршрут таңдаңыз</option>
+    </select>
+    <select class="pred-select" id="predDay">
+      <option value="weekday">Жұмыс күні</option>
+      <option value="weekend">Демалыс күні</option>
+    </select>
+    <button class="pred-analyze-btn" onclick="runPrediction()">📊 Талдау</button>
+  </div>
+  <div class="pred-result" id="predResult">
+    <div class="pred-result-title" id="predResultTitle"></div>
+    <div class="pred-chart" id="predChart"></div>
+    <div class="pred-insight" id="predInsight"></div>
+  </div>
+</div>
+
+<!-- CHAT -->
+<div class="page" id="page-chat">
+  <div id="chatRequireLogin" class="login-required" style="display:none">
+    <h3>🔐 Кіру қажет</h3>
+    <p>AI Көмекшіні пайдалану үшін тіркелуіңіз немесе кіруіңіз қажет</p>
+    <button class="login-req-btn" onclick="showPage('login')">Кіру / Тіркелу</button>
+  </div>
+  <div id="chatMain" style="display:none">
+    <div class="chat-container">
+      <div class="chat-header">
+        <div class="ai-avatar">🤖</div>
+        <div class="chat-info">
+          <h3>JolaushyMap AI Көмекші</h3>
+          <p>Қоғамдық көлік жайлы сұрақтарыңызға жауап береді</p>
+        </div>
+      </div>
+      <div class="chat-messages" id="chatMessages">
+        <div class="msg bot">
+          <div class="msg-bubble">Сәлем! Мен JolaushyMap AI Көмекшісімін 🚌 Алматы қоғамдық көлігі туралы кез келген сұрағыңызға жауап бере аламын. Қалай көмектесе аламын?</div>
+          <div class="msg-time">Қазір</div>
+        </div>
+      </div>
+      <div class="quick-btns" style="padding:0.5rem 1rem;background:var(--bg2);border-left:1px solid var(--border);border-right:1px solid var(--border)">
+        <button class="quick-btn" onclick="sendQuick('№33 маршруты қанша толы?')">№33 маршруты</button>
+        <button class="quick-btn" onclick="sendQuick('Таңертең 8-де қай маршрут бос болады?')">Таңертең бос маршрут</button>
+        <button class="quick-btn" onclick="sendQuick('APC технологиясы дегеніміз не?')">APC дегеніміз не?</button>
+        <button class="quick-btn" onclick="sendQuick('Ең тығыз маршрутты айтшы')">Ең тығыз маршрут</button>
+      </div>
+      <div class="chat-input-area">
+        <textarea class="chat-textarea" id="chatInput" rows="1" placeholder="Сұрағыңызды жазыңыз..." onkeydown="handleChatKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()">➤</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div class="page" id="page-login">
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-title">Жүйеге кіру</div>
+      <div class="auth-sub">Тіркелгіңізге кіріңіз</div>
+      <div class="alert error" id="loginAlert"></div>
+      <div class="form-group">
+        <label class="form-label">Электрондық пошта</label>
+        <input class="form-input" id="loginEmail" type="email" placeholder="siz@email.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Құпия сөз</label>
+        <input class="form-input" id="loginPass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="form-btn" id="loginBtn" onclick="doLogin()">Кіру</button>
+      <div class="auth-switch">Тіркелмегенсіз бе? <a onclick="showPage('register')">Тіркелу</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- REGISTER -->
+<div class="page" id="page-register">
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-title">Тіркелу</div>
+      <div class="auth-sub">Жаңа тіркелгі жасаңыз</div>
+      <div class="alert error" id="regAlert"></div>
+      <div class="alert success" id="regSuccess"></div>
+      <div class="form-group">
+        <label class="form-label">Аты-жөніңіз</label>
+        <input class="form-input" id="regName" type="text" placeholder="Асыл Нұрова">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Электрондық пошта</label>
+        <input class="form-input" id="regEmail" type="email" placeholder="siz@email.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Құпия сөз</label>
+        <input class="form-input" id="regPass" type="password" placeholder="Мін. 6 таңба" onkeydown="if(event.key==='Enter')doRegister()">
+      </div>
+      <button class="form-btn" id="regBtn" onclick="doRegister()">Тіркелу</button>
+      <div class="auth-switch">Тіркелгіңіз бар ма? <a onclick="showPage('login')">Кіру</a></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// =================== DATA ===================
+const ROUTES = [
+  {id:1,num:'№12',name:'Алатау — Орталық',cap:60,pax:18,stops:['Алатау','Байтерек','Абай','Орталық']},
+  {id:2,num:'№7',name:'Сайран — Достық',cap:60,pax:44,stops:['Сайран','Алмалы','Бостандық','Достық']},
+  {id:3,num:'№33',name:'Мәдениет — Шаһар',cap:60,pax:55,stops:['Мәдениет','Орталық','Шаһар']},
+  {id:4,num:'№19',name:'Алғабас — Іле',cap:60,pax:10,stops:['Алғабас','Жетісу','Іле']},
+  {id:5,num:'№А2',name:'Байқоңыр — Орталық',cap:60,pax:38,stops:['Байқоңыр','Алмалы','Орталық']},
+  {id:6,num:'№26',name:'Қарасу — Алмалы',cap:60,pax:57,stops:['Қарасу','Наурызбай','Алмалы']},
+  {id:7,num:'№45',name:'Шымбұлақ — Саябақ',cap:40,pax:12,stops:['Шымбұлақ','Медеу','Саябақ']},
+  {id:8,num:'№8Б',name:'Аэропорт — Орталық',cap:80,pax:61,stops:['Аэропорт','Алатау','Орталық']},
+  {id:9,num:'№53',name:'Үлкен Алматы — Панфилов',cap:60,pax:29,stops:['Үлкен Алматы','Абай','Панфилов']},
+];
+
+// =================== AUTH (localStorage) ===================
+let currentUser = null;
+try { currentUser = JSON.parse(localStorage.getItem('jm_user')); } catch(e){}
+
+function getUsers() {
+  try { return JSON.parse(localStorage.getItem('jm_users')||'[]'); } catch(e){return []}
+}
+function saveUsers(u){ localStorage.setItem('jm_users',JSON.stringify(u)); }
+
+function doRegister(){
+  const name=document.getElementById('regName').value.trim();
+  const email=document.getElementById('regEmail').value.trim();
+  const pass=document.getElementById('regPass').value;
+  const ra=document.getElementById('regAlert');
+  const rs=document.getElementById('regSuccess');
+  ra.className='alert error'; rs.className='alert success';
+  if(!name||!email||!pass){showAlert(ra,'Барлық өрістерді толтырыңыз');return;}
+  if(pass.length<6){showAlert(ra,'Құпия сөз кем дегенде 6 таңба болуы керек');return;}
+  const users=getUsers();
+  if(users.find(u=>u.email===email)){showAlert(ra,'Бұл пошта бұрын тіркелген');return;}
+  const user={id:Date.now(),name,email,pass,createdAt:new Date().toISOString()};
+  users.push(user); saveUsers(users);
+  showAlert(rs,'Тіркелу сәтті! Жүйеге кіріңіз...','success');
+  setTimeout(()=>showPage('login'),1500);
+}
+
+function doLogin(){
+  const email=document.getElementById('loginEmail').value.trim();
+  const pass=document.getElementById('loginPass').value;
+  const la=document.getElementById('loginAlert');
+  la.className='alert error';
+  if(!email||!pass){showAlert(la,'Барлық өрістерді толтырыңыз');return;}
+  const users=getUsers();
+  const user=users.find(u=>u.email===email&&u.pass===pass);
+  if(!user){showAlert(la,'Пошта немесе құпия сөз қате');return;}
+  currentUser=user;
+  localStorage.setItem('jm_user',JSON.stringify(user));
+  updateUserUI();
+  showPage('dashboard');
+}
+
+function doLogout(){
+  currentUser=null;
+  localStorage.removeItem('jm_user');
+  updateUserUI();
+  showPage('dashboard');
+}
+
+function updateUserUI(){
+  const area=document.getElementById('userArea');
+  if(currentUser){
+    area.innerHTML=`<div class="user-chip"><div class="user-avatar">${currentUser.name[0]}</div>${currentUser.name}</div><button class="logout-btn" onclick="doLogout()">Шығу</button>`;
+  } else {
+    area.innerHTML=`<button class="auth-btn btn-login" onclick="showPage('login')">Кіру</button><button class="auth-btn btn-register" onclick="showPage('register')">Тіркелу</button>`;
+  }
+}
+
+function showAlert(el,msg,type='error'){
+  el.textContent=msg; el.className=`alert ${type} show`;
+}
+
+// =================== PAGES ===================
+const tabs=['dashboard','search','predict','chat','login','register'];
+const tabBtns=document.querySelectorAll('.tab');
+function showPage(id){
+  tabs.forEach(t=>{
+    const p=document.getElementById('page-'+t);
+    if(p) p.className='page'+(t===id?' active':'');
+  });
+  tabBtns.forEach((b,i)=>{
+    const names=['dashboard','search','predict','chat'];
+    b.className='tab'+(names[i]===id?' active':'');
+  });
+  if(id==='search') renderSearch();
+  if(id==='predict') initPredict();
+  if(id==='chat') initChat();
+}
+
+// =================== ROUTES ===================
+function getStatus(r){
+  const p=r.pax/r.cap;
+  return p<0.5?'green':p<0.8?'yellow':'red';
+}
+function statusLabel(s){return{green:'🟢 Бос',yellow:'🟡 Орташа',red:'🔴 Толы'}[s]}
+function statusColor(s){return{green:'var(--green)',yellow:'var(--yellow)',red:'var(--red)'}[s]}
+
+let selectedRoute=null;
+function renderMainGrid(){
+  const g=document.getElementById('mainRouteGrid');
+  g.innerHTML='';
+  ROUTES.forEach(r=>{
+    const s=getStatus(r);
+    const pct=Math.round(r.pax/r.cap*100);
+    const d=document.createElement('div');
+    d.className='route-card'+(selectedRoute===r.id?' selected':'');
+    d.onclick=()=>showDetail(r);
+    d.innerHTML=`
+      <div class="rc-top"><div class="rc-num">${r.num}</div><div class="status-dot s-${s}"></div></div>
+      <div class="rc-name">${r.name}</div>
+      <div class="bar-bg"><div class="bar-fill b-${s}" style="width:${pct}%"></div></div>
+      <div class="rc-pax">${r.pax}/${r.cap} орын</div>`;
+    g.appendChild(d);
+  });
+}
+
+function showDetail(r){
+  selectedRoute=r.id;
+  renderMainGrid();
+  const panel=document.getElementById('detailPanel');
+  const s=getStatus(r);
+  const pct=Math.round(r.pax/r.cap*100);
+  document.getElementById('dpTitle').textContent=`${r.num} — ${r.name}`;
+  document.getElementById('dpPax').textContent=r.pax;
+  document.getElementById('dpPct').textContent=pct+'%';
+  document.getElementById('dpPct').style.color=statusColor(s);
+  document.getElementById('dpStatus').textContent=statusLabel(s);
+  document.getElementById('dpStatus').style.color=statusColor(s);
+  // prediction mini chart
+  const hours=document.getElementById('dpPredHours');
+  hours.innerHTML='';
+  const now=new Date().getHours();
+  for(let i=0;i<8;i++){
+    const h=(now+i)%24;
+    const rush=(h>=7&&h<=9)||(h>=17&&h<=19);
+    const base=rush?0.75:0.4;
+    const val=Math.min(1,base+Math.random()*0.2);
+    const s2=val<0.5?'green':val<0.8?'yellow':'red';
+    const div=document.createElement('div');
+    div.className='pred-hour';
+    div.innerHTML=`
+      <div class="pred-bar-wrap" style="height:50px">
+        <div class="pred-bar-inner b-${s2}" style="height:${val*100}%"></div>
+      </div>
+      <div class="pred-hour-label">${h}:00</div>`;
+    hours.appendChild(div);
+  }
+  panel.className='detail-panel show';
+  panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function closeDetail(){
+  selectedRoute=null;
+  document.getElementById('detailPanel').className='detail-panel';
+  renderMainGrid();
+}
+
+// =================== SEARCH ===================
+let searchFilter='all';
+function toggleFilter(btn,f){
+  searchFilter=f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  doSearch();
+}
+function doSearch(){
+  const q=document.getElementById('searchInput').value.toLowerCase();
+  const res=document.getElementById('searchResults');
+  let routes=ROUTES.filter(r=>{
+    const match=r.num.toLowerCase().includes(q)||r.name.toLowerCase().includes(q);
+    const s=getStatus(r);
+    if(searchFilter==='all') return match;
+    return match&&s===searchFilter;
+  });
+  res.innerHTML='';
+  if(!routes.length){res.innerHTML=`<div style="color:var(--muted);text-align:center;padding:2rem">Маршрут табылмады</div>`;return;}
+  routes.forEach(r=>{
+    const s=getStatus(r);
+    const pct=Math.round(r.pax/r.cap*100);
+    const d=document.createElement('div');
+    d.className='sr-card';
+    d.innerHTML=`
+      <div class="sr-num" style="color:${statusColor(s)}">${r.num}</div>
+      <div class="sr-info"><div class="sr-name">${r.name}</div><div class="sr-meta">Аялдамалар: ${r.stops.join(' → ')}</div></div>
+      <div class="sr-status"><div class="sr-pct" style="color:${statusColor(s)}">${pct}%</div><div class="sr-label">${statusLabel(s)}</div></div>`;
+    res.appendChild(d);
+  });
+}
+function renderSearch(){doSearch();}
+
+// =================== PREDICTION ===================
+function initPredict(){
+  const sel=document.getElementById('predRoute');
+  if(sel.options.length<=1){
+    ROUTES.forEach(r=>{sel.innerHTML+=`<option value="${r.id}">${r.num} — ${r.name}</option>`});
+  }
+}
+function runPrediction(){
+  const routeId=parseInt(document.getElementById('predRoute').value);
+  if(!routeId){alert('Маршрут таңдаңыз');return;}
+  const isWeekend=document.getElementById('predDay').value==='weekend';
+  const route=ROUTES.find(r=>r.id===routeId);
+  const btn=document.querySelector('.pred-analyze-btn');
+  btn.disabled=true; btn.textContent='Есептеуде...';
+  setTimeout(()=>{
+    btn.disabled=false; btn.textContent='📊 Талдау';
+    showPredResult(route,isWeekend);
+  },800);
+}
+function showPredResult(route,isWeekend){
+  const hours=['06','07','08','09','10','11','12','13','14','15','16','17','18','19','20','21'];
+  const weekdayPattern=[0.2,0.4,0.9,0.85,0.5,0.35,0.4,0.5,0.45,0.5,0.6,0.88,0.95,0.75,0.55,0.3];
+  const weekendPattern=[0.1,0.2,0.3,0.4,0.5,0.6,0.65,0.7,0.65,0.6,0.65,0.7,0.6,0.5,0.45,0.3];
+  const pattern=isWeekend?weekendPattern:weekdayPattern;
+  document.getElementById('predResultTitle').textContent=`${route.num} маршруты — ${isWeekend?'Демалыс':'Жұмыс'} күні болжамы`;
+  const chart=document.getElementById('predChart');
+  chart.innerHTML='';
+  pattern.forEach((v,i)=>{
+    const s=v<0.5?'green':v<0.8?'yellow':'red';
+    const pax=Math.round(v*route.cap);
+    const d=document.createElement('div');
+    d.className='pred-col';
+    d.innerHTML=`
+      <div class="pred-col-val" style="color:${statusColor(s)}">${Math.round(v*100)}%</div>
+      <div class="pred-col-bar b-${s}" style="height:${v*80}px"></div>
+      <div class="pred-col-time">${hours[i]}</div>`;
+    chart.appendChild(d);
+  });
+  const peakIdx=pattern.indexOf(Math.max(...pattern));
+  const peakHour=hours[peakIdx];
+  const offIdx=pattern.indexOf(Math.min(...pattern));
+  const offHour=hours[offIdx];
+  document.getElementById('predInsight').innerHTML=`
+    <strong>📌 Болжам қорытындысы:</strong><br>
+    Ең тығыз уақыт: <strong style="color:var(--red)">${peakHour}:00</strong> (${Math.round(pattern[peakIdx]*100)}% толтырылу).<br>
+    Ең бос уақыт: <strong style="color:var(--green)">${offHour}:00</strong> (${Math.round(pattern[offIdx]*100)}% толтырылу).<br>
+    ${isWeekend?'Демалыс күні жүктелу біркелкі болады.':'Таңертеңгі (08-09) және кешкі (17-18) қарбалас уақытта тығыз болады. Осы уақытты болдырмаған жөн.'}`;
+  document.getElementById('predResult').className='pred-result show';
+}
+
+// =================== AI CHAT ===================
+function initChat(){
+  const main=document.getElementById('chatMain');
+  const req=document.getElementById('chatRequireLogin');
+  if(currentUser){ main.style.display='flex'; req.style.display='none'; }
+  else { main.style.display='none'; req.style.display='block'; }
+}
+function handleChatKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}}
+function autoResize(ta){ta.style.height='auto';ta.style.height=Math.min(ta.scrollHeight,120)+'px';}
+function sendQuick(text){document.getElementById('chatInput').value=text;sendMessage();}
+
+async function sendMessage(){
+  const input=document.getElementById('chatInput');
+  const text=input.value.trim();
+  if(!text)return;
+  input.value=''; input.style.height='auto';
+  const btn=document.getElementById('sendBtn');
+  btn.disabled=true;
+  appendMsg(text,'user');
+  showTyping(true);
+  
+  // Build context about current routes
+  const routeContext=ROUTES.map(r=>`${r.num} (${r.name}): ${r.pax}/${r.cap} орын (${Math.round(r.pax/r.cap*100)}% — ${getStatus(r)==='green'?'бос':getStatus(r)==='yellow'?'орташа':'толы'})`).join('\n');
+  
+  try {
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system:`Сен JolaushyMap — Алматы қоғамдық көлік мониторинг жүйесінің AI көмекшісісің. Нақты уақыт режимінде маршруттар туралы ақпарат бересің. Тек қазақ тілінде жауап бер. Қысқа және нақты болу керек (макс 3-4 сөйлем). 
+
+Қазіргі маршруттар күйі:
+${routeContext}
+
+APC (Automated Passenger Counting) технологиясын, инфрақызыл сенсорларды, жолаушылар тығыздығын және маршруттарды түсіндіре аласың.`,
+        messages:[{role:'user',content:text}]
+      })
+    });
+    const data=await res.json();
+    const reply=data.content?.map(c=>c.text||'').join('')||'Кешіріңіз, жауап ала алмадым.';
+    showTyping(false);
+    appendMsg(reply,'bot');
+  } catch(e){
+    showTyping(false);
+    appendMsg('Қосылу қатесі. Интернет байланысын тексеріңіз.','bot');
+  }
+  btn.disabled=false;
+}
+
+function appendMsg(text,role){
+  const msgs=document.getElementById('chatMessages');
+  const d=document.createElement('div');
+  d.className=`msg ${role}`;
+  const now=new Date();
+  const t=`${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+  d.innerHTML=`<div class="msg-bubble">${text.replace(/\n/g,'<br>')}</div><div class="msg-time">${t}</div>`;
+  msgs.appendChild(d);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+let typingEl=null;
+function showTyping(show){
+  if(show&&!typingEl){
+    const msgs=document.getElementById('chatMessages');
+    typingEl=document.createElement('div');
+    typingEl.className='msg bot';
+    typingEl.innerHTML='<div class="typing-indicator" style="display:flex"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
+    msgs.appendChild(typingEl);
+    msgs.scrollTop=msgs.scrollHeight;
+  } else if(!show&&typingEl){
+    typingEl.remove(); typingEl=null;
+  }
+}
+
+// =================== LIVE UPDATE ===================
+setInterval(()=>{
+  ROUTES.forEach(r=>{
+    const d=Math.floor(Math.random()*5)-2;
+    r.pax=Math.max(0,Math.min(r.cap,r.pax+d));
+  });
+  const activePage=document.querySelector('.page.active');
+  if(activePage?.id==='page-dashboard') renderMainGrid();
+  if(activePage?.id==='page-search') doSearch();
+},4000);
+
+// =================== INIT ===================
+updateUserUI();
+renderMainGrid();
+</script>
+</body>
+</html>
